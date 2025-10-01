@@ -127,3 +127,7 @@ dmypy.json
 *.log
 .env
 *.env
+
+.idea/
+
+*.token
