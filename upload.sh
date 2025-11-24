@@ -2,6 +2,7 @@
 set -euo pipefail
 
 # === CONFIG ===
+source upload.env
 VIDEO_FILE="/home/mvievard/Vidéos/2025-09-29/ideesnoires.MP4"
 TITLE="ideesnoires.mp4"
 DESCRIPTION="Reprise de \"Idées noires\" (original : Bernard Lavilliers).
