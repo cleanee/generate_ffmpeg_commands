@@ -12,6 +12,6 @@ pip3 install uv
 ## Lancement
 
 ```bash
-uv run app ffmpeg_exemple.csv --execute
+uv run app repete_split.csv --execute
 ```
 
