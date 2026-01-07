@@ -1,4 +1,5 @@
 import csv
+import shlex
 import subprocess
 from pathlib import Path
 from typing import Optional
@@ -35,16 +36,21 @@ def main(
 
     with open(csv_path, mode='r') as csvfile:
         reader = csv.DictReader(csvfile)
+        
+        # Validation des colonnes requises (une seule fois, après lecture du header)
+        required_columns = ['debutM', 'debutS', 'finM', 'finS', 'fsource', 'fdest']
+        if reader.fieldnames is None:
+            logger.error("Le fichier CSV est vide ou invalide")
+            raise typer.Exit(1)
+        
+        missing_columns = [col for col in required_columns if col not in reader.fieldnames]
+        if missing_columns:
+            logger.error(f"Colonnes manquantes dans le CSV : {missing_columns}")
+            raise typer.Exit(1)
+        
         commands = []
         for line_num, row in enumerate(reader, start=2):  # start=2 car ligne 1 = header
             try:
-                # Validation des colonnes requises
-                required_columns = ['debutM', 'debutS', 'finM', 'finS', 'fsource', 'fdest']
-                missing_columns = [col for col in required_columns if col not in row]
-                if missing_columns:
-                    logger.error(f"Ligne {line_num}: Colonnes manquantes : {missing_columns}")
-                    raise typer.Exit(1)
-                
                 # Validation et conversion des timestamps
                 start_seconds = calculate_seconds(int(row['debutM']), int(row['debutS']))
                 end_seconds = calculate_seconds(int(row['finM']), int(row['finS']))
@@ -78,9 +84,6 @@ def main(
                 )
                 commands.append(command)
                 logger.info(f"Commande générée : {command}")
-            except KeyError as e:
-                logger.error(f"Ligne {line_num}: Colonne manquante dans le CSV : {e}")
-                raise typer.Exit(1)
             except ValueError as e:
                 logger.error(f"Ligne {line_num}: Erreur de validation : {e}")
                 raise typer.Exit(1)
@@ -108,9 +111,9 @@ def main(
             for idx, cmd in enumerate(commands, start=1):
                 logger.info(f"Exécution ({idx}/{len(commands)}): {cmd}")
                 try:
-                    # Utilisation de subprocess.run sans shell=True pour éviter l'injection de commandes
-                    # On parse la commande pour extraire les arguments
-                    cmd_parts = cmd.split()
+                    # Utilisation de shlex.split() pour un parsing sécurisé des commandes
+                    # qui gère correctement les chemins avec espaces et caractères spéciaux
+                    cmd_parts = shlex.split(cmd)
                     subprocess.run(cmd_parts, check=True, capture_output=True, text=True)
                     logger.success(f"Commande exécutée avec succès : {cmd}")
                 except subprocess.CalledProcessError as e:
